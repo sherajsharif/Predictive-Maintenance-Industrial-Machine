@@ -5,325 +5,516 @@ import pickle
 import os
 import time
 
-# --- Page Configuration ---
+# --- Page Configuration (MUST be first Streamlit call) ---
 st.set_page_config(
-    page_title="Industrial Predictive Maintenance",
+    page_title="PredictX — Industrial AI",
     page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# --- Custom CSS for Premium Look ---
+# --- Premium CSS ---
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #f8fafc;
-    }
-    
-    .main-title {
-        font-size: 3.5rem;
-        font-weight: 800;
-        background: linear-gradient(to right, #38bdf8, #818cf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-        text-align: center;
-    }
-    
-    .sub-title {
-        font-size: 1.2rem;
-        color: #94a3b8;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    /* Card Container */
-    .card {
-        background: rgba(30, 41, 59, 0.5);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 1.5rem;
-        padding: 2rem;
-        margin-bottom: 1rem;
-    }
-    
-    .metric-label {
-        color: #94a3b8;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.2rem;
-    }
-    
-    .metric-value {
-        color: #f8fafc;
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-    }
-    
-    .prediction-card {
-        border-radius: 1.5rem;
-        padding: 2.5rem;
-        text-align: center;
-        transition: transform 0.3s ease;
-    }
-    
-    .success-card {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.2) 100%);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    
-    .warning-card {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.2) 100%);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-    
-    .danger-card {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(185, 28, 28, 0.2) 100%);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    
-    .status-badge {
-        display: inline-block;
-        padding: 0.5rem 1.5rem;
-        border-radius: 9999px;
-        font-weight: 700;
-        font-size: 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    /* Button Styling */
-    .stButton > button {
-        background: linear-gradient(to right, #38bdf8, #818cf8) !important;
-        color: white !important;
-        border: none !important;
-        font-weight: 700 !important;
-        padding: 0.75rem 2rem !important;
-        border-radius: 0.75rem !important;
-        width: 100%;
-        transition: all 0.3s ease !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.4);
-    }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
 
-    /* Input Styling */
-    .stSlider [data-testid="stSliderTickBar"] {
-        display: none;
-    }
-    
-    /* Make slider labels more visible */
-    [data-testid="stWidgetLabel"] p {
-        color: #cbd5e1 !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-    }
-    
-    /* Hide Streamlit components */
-    header {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Custom spacing */
-    .block-container {
-        padding-top: 2rem !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+/* ── Reset & Base ── */
+html, body, [class*="css"] {
+    font-family: 'Syne', sans-serif;
+}
 
-# --- Helper Functions ---
+.stApp {
+    background: #050a10;
+    color: #e2e8f0;
+}
+
+/* ── Animated grid background ── */
+.stApp::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(56,189,248,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── Hide Streamlit chrome ── */
+header {visibility: hidden;}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+.block-container { padding-top: 2rem !important; position: relative; z-index: 1; }
+
+/* ── Hero Header ── */
+.hero-wrap {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    position: relative;
+}
+.hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    color: #38bdf8;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+}
+.hero-title {
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    background: linear-gradient(100deg, #f0f9ff 30%, #38bdf8 60%, #818cf8 90%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.03em;
+}
+.hero-sub {
+    color: #64748b;
+    font-size: 1rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+}
+
+/* ── Section headings ── */
+.section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    color: #38bdf8;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(56,189,248,0.4), transparent);
+}
+
+/* ── Glass card ── */
+.glass-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 1.25rem;
+    padding: 1.6rem 1.8rem;
+    margin-bottom: 1.2rem;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* ── Slider label ── */
+[data-testid="stWidgetLabel"] p {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    font-family: 'DM Mono', monospace !important;
+    letter-spacing: 0.05em !important;
+}
+
+/* ── Selectbox ── */
+[data-baseweb="select"] {
+    background: rgba(15,23,42,0.8) !important;
+    border: 1px solid rgba(56,189,248,0.2) !important;
+    border-radius: 0.6rem !important;
+}
+
+/* ── Slider track color ── */
+[data-testid="stSlider"] [role="slider"] {
+    background: #38bdf8 !important;
+}
+
+/* ── Predict button ── */
+.stButton > button {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    padding: 0.85rem 2rem !important;
+    border-radius: 0.75rem !important;
+    width: 100% !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 0 24px rgba(56,189,248,0.2) !important;
+}
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 32px rgba(56,189,248,0.4) !important;
+}
+
+/* ── Divider ── */
+hr {
+    border: none !important;
+    border-top: 1px solid rgba(56,189,248,0.1) !important;
+    margin: 1.5rem 0 !important;
+}
+
+/* ── Result cards ── */
+.result-card {
+    border-radius: 1.25rem;
+    padding: 2rem 1.8rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    border: 1px solid;
+}
+.result-healthy {
+    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.15));
+    border-color: rgba(16,185,129,0.35);
+}
+.result-failure {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(185,28,28,0.15));
+    border-color: rgba(239,68,68,0.35);
+}
+.result-icon { font-size: 2.5rem; margin-bottom: 0.6rem; }
+.result-badge {
+    display: inline-block;
+    padding: 0.3rem 1.2rem;
+    border-radius: 9999px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+}
+.badge-green  { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+.badge-red    { background: rgba(239,68,68,0.2);  color: #f87171; border: 1px solid rgba(239,68,68,0.4); }
+.result-title { font-size: 1.6rem; font-weight: 800; margin: 0 0 0.5rem; }
+.result-title-green { color: #34d399; }
+.result-title-red   { color: #f87171; }
+.result-sub { color: #64748b; font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+.result-conf { font-size: 0.9rem; margin-top: 0.5rem; color: #94a3b8; }
+
+/* ── Live metric grid ── */
+.metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+}
+.metric-tile {
+    background: rgba(15,23,42,0.6);
+    border: 1px solid rgba(56,189,248,0.1);
+    border-radius: 0.9rem;
+    padding: 0.9rem 1rem;
+    transition: border-color 0.3s;
+}
+.metric-tile:hover { border-color: rgba(56,189,248,0.3); }
+.m-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.66rem;
+    color: #475569;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+.m-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    line-height: 1;
+}
+.m-unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: #38bdf8;
+    margin-left: 0.2rem;
+}
+
+/* ── Status strip ── */
+.status-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #38bdf8;
+    padding: 0.6rem 1rem;
+    background: rgba(56,189,248,0.05);
+    border: 1px solid rgba(56,189,248,0.12);
+    border-radius: 0.6rem;
+    margin-bottom: 1.2rem;
+    letter-spacing: 0.08em;
+}
+.pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #38bdf8;
+    animation: pulse 1.8s infinite;
+    flex-shrink: 0;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* ── Bar chart overrides ── */
+[data-testid="stVegaLiteChart"] canvas,
+[data-testid="stArrowVegaLiteChart"] { border-radius: 0.75rem; }
+
+/* ── Info box ── */
+[data-testid="stAlert"] {
+    background: rgba(56,189,248,0.06) !important;
+    border: 1px solid rgba(56,189,248,0.18) !important;
+    border-radius: 0.75rem !important;
+    color: #94a3b8 !important;
+    font-family: 'DM Mono', monospace !important;
+    font-size: 0.82rem !important;
+}
+
+/* ── Spinner ── */
+[data-testid="stSpinner"] { color: #38bdf8 !important; }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ── Helper ────────────────────────────────────────────────────────────────────
 @st.cache_resource
 def load_assets():
-    """
-    Load all trained models from the models folder.
-    Works both locally and on Streamlit Cloud.
-    """
-
+    """Load pickle models. Returns (binary_model, multi_model, scaler) or (None,None,None)."""
     try:
-        # Get absolute path of current app.py
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-        # Models folder path
-        MODELS_DIR = os.path.join(BASE_DIR, "models")
-
-        # File paths
-        binary_model_path = os.path.join(MODELS_DIR, "binary_xgb.pkl")
-        multi_model_path = os.path.join(MODELS_DIR, "multi_xgb.pkl")
-        scaler_path = os.path.join(MODELS_DIR, "scaler.pkl")
-
-        # Check existence
-        if not os.path.exists(binary_model_path):
-            raise FileNotFoundError(f"Missing file: {binary_model_path}")
-
-        if not os.path.exists(multi_model_path):
-            raise FileNotFoundError(f"Missing file: {multi_model_path}")
-
-        if not os.path.exists(scaler_path):
-            raise FileNotFoundError(f"Missing file: {scaler_path}")
-
-        # Load models
-        with open(binary_model_path, "rb") as f:
+        models_dir = 'models'
+        with open(os.path.join(models_dir, 'binary_xgb.pkl'), 'rb') as f:
             binary_model = pickle.load(f)
-
-        with open(multi_model_path, "rb") as f:
+        with open(os.path.join(models_dir, 'multi_xgb.pkl'), 'rb') as f:
             multi_model = pickle.load(f)
-
-        with open(scaler_path, "rb") as f:
+        with open(os.path.join(models_dir, 'scaler.pkl'), 'rb') as f:
             scaler = pickle.load(f)
-
         return binary_model, multi_model, scaler
-
+    except FileNotFoundError as e:
+        st.error(f"❌ Model file not found: {e}. Make sure the `models/` folder is present.")
+        return None, None, None
     except Exception as e:
-        st.error(f"❌ Error loading models: {e}")
+        st.error(f"❌ Unexpected error loading models: {e}")
         return None, None, None
 
-# --- Main App ---
-def main():
-    st.markdown('<h1 class="main-title">Predictive Maintenance AI</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Real-time industrial sensor analysis & failure prevention</p>', unsafe_allow_html=True)
 
-    # Load Assets
+# ── Main ──────────────────────────────────────────────────────────────────────
+def main():
+    # ── Hero ──
+    st.markdown("""
+    <div class="hero-wrap">
+        <div class="hero-eyebrow">⚙ Industrial Intelligence Platform</div>
+        <h1 class="hero-title">PredictX Maintenance AI</h1>
+        <p class="hero-sub">Real-time sensor fusion · Failure classification · Root cause analysis</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Load models ──
     binary_model, multi_model, scaler = load_assets()
     if binary_model is None or multi_model is None or scaler is None:
-        st.error("❌ Failed to load model files.")
         st.stop()
-        st.error("Missing model files in 'models/' directory.")
-        return
 
-    # --- Dashboard Layout ---
-    # Top Section: Inputs
-    st.markdown("### 🛠️ Configuration & Sensors")
-    
-    input_col1, input_col2, input_col3 = st.columns([1.5, 2, 2])
-    
-    with input_col1:
+    # ── Status strip ──
+    st.markdown("""
+    <div class="status-strip">
+        <span class="pulse-dot"></span>
+        SYSTEM ONLINE &nbsp;·&nbsp; MODELS LOADED &nbsp;·&nbsp; SENSOR FEED ACTIVE
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════
+    #  INPUT SECTION
+    # ════════════════════════════════════════════
+    st.markdown('<div class="section-label">01 — Configuration & Sensor Input</div>', unsafe_allow_html=True)
+
+    col_a, col_b, col_c = st.columns([1.4, 2, 2], gap="medium")
+
+    with col_a:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("**Product Grade**")
         type_map = {'Low (L)': 0, 'Medium (M)': 1, 'High (H)': 2}
-        type_input = st.selectbox("Select quality type", list(type_map.keys()), index=1, label_visibility="collapsed")
-        
-        st.markdown("**Tool Wear**")
-        tool_wear = st.slider("Wear time (min)", 0, 260, 100, label_visibility="collapsed")
+        type_input = st.selectbox(
+            "Product quality grade",
+            list(type_map.keys()),
+            index=1,
+            label_visibility="collapsed",
+        )
+        st.markdown("&nbsp;", unsafe_allow_html=True)
+        st.markdown("**Tool Wear (min)**")
+        tool_wear = st.slider("Tool wear time", 0, 260, 100, label_visibility="collapsed")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    with input_col2:
-        st.markdown("**Temperatures [K]**")
-        air_temp = st.slider("Air Temperature", 295.0, 305.0, 300.0, 0.1)
-        process_temp = st.slider("Process Temperature", 305.0, 315.0, 310.0, 0.1)
+    with col_b:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("**Temperatures [Kelvin]**")
+        air_temp     = st.slider("Air Temperature [K]",     295.0, 305.0, 300.0, 0.1)
+        process_temp = st.slider("Process Temperature [K]", 305.0, 315.0, 310.0, 0.1)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    with input_col3:
+    with col_c:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("**Mechanical Parameters**")
-        speed = st.slider("Rotational Speed (RPM)", 1100, 3000, 1500)
-        torque = st.slider("Torque (Nm)", 3.0, 80.0, 40.0, 0.1)
+        speed  = st.slider("Rotational Speed [RPM]", 1100, 3000, 1500)
+        torque = st.slider("Torque [Nm]",             3.0,  80.0,  40.0, 0.1)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Middle Section: Analysis
-    st.markdown("---")
-    
-    col_results, col_metrics = st.columns([1.2, 1])
+    st.markdown("<hr>", unsafe_allow_html=True)
 
-    with col_results:
-        st.markdown("### 🔮 AI Diagnostics")
-        
-        # Prepare Input Data
-        input_sensors = np.array([[air_temp, process_temp, speed, torque, tool_wear]])
-        scaled_sensors = scaler.transform(input_sensors)
-        
-        type_val = type_map[type_input]
-        final_features = np.zeros((1, 6))
-        final_features[0, 0] = type_val
-        final_features[0, 1:] = scaled_sensors[0]
-        
-        feature_names = ['Type', 'Air temperature', 'Process temperature', 'Rotational speed', 'Torque', 'Tool wear']
-        df_input = pd.DataFrame(final_features, columns=feature_names)
+    # ════════════════════════════════════════════
+    #  RESULTS SECTION
+    # ════════════════════════════════════════════
+    col_res, col_live = st.columns([1.3, 1], gap="large")
 
-        # Run Prediction
-        if st.button("RUN DIAGNOSTICS"):
-            with st.spinner("Analyzing sensor patterns..."):
+    # ── Prepare features (always, so live panel updates) ──
+    input_sensors  = np.array([[air_temp, process_temp, speed, torque, tool_wear]])
+    scaled_sensors = scaler.transform(input_sensors)
+
+    type_val       = type_map[type_input]
+    final_features = np.zeros((1, 6))
+    final_features[0, 0]  = type_val
+    final_features[0, 1:] = scaled_sensors[0]
+
+    feature_names = ['Type', 'Air temperature', 'Process temperature',
+                     'Rotational speed', 'Torque', 'Tool wear']
+    df_input = pd.DataFrame(final_features, columns=feature_names)
+
+    CLASS_LABELS = [
+        'No Failure',
+        'Power Failure',
+        'Tool Wear Failure',
+        'Overstrain Failure',
+        'Heat Dissipation Failure',
+    ]
+
+    with col_res:
+        st.markdown('<div class="section-label">02 — AI Diagnostics</div>', unsafe_allow_html=True)
+
+        if st.button("⚡  RUN DIAGNOSTICS", use_container_width=True):
+            with st.spinner("Analyzing sensor stream…"):
                 time.sleep(0.5)
-                
-                # Model predictions
-                is_failure = binary_model.predict(df_input)[0]
-                failure_type_idx = multi_model.predict(df_input)[0]
-                class_labels = ['No Failure', 'Power Failure', 'Tool Wear Failure', 'Overstrain Failure', 'Heat Dissipation Failure']
-                
-                # Get probabilities
+
+                is_failure      = int(binary_model.predict(df_input)[0])
+                failure_type_idx = int(multi_model.predict(df_input)[0])
+
+                # Safe probability extraction
                 try:
-                    binary_prob = binary_model.predict_proba(df_input)[0][1]
+                    binary_prob = float(binary_model.predict_proba(df_input)[0][1])
                     multi_probs = multi_model.predict_proba(df_input)[0]
-                except:
+                except Exception:
                     binary_prob = 1.0 if is_failure else 0.0
-                    multi_probs = np.zeros(len(class_labels))
+                    multi_probs = np.zeros(len(CLASS_LABELS))
                     multi_probs[failure_type_idx] = 1.0
 
-                # Refine logic: If binary model detects a failure but multi-model says 'No Failure' (0),
-                # we force it to show the most likely failure type from the other classes.
+                # Reconcile models: if binary says failure but multi says "No Failure"
                 if is_failure and failure_type_idx == 0:
-                    # Find the index of the highest probability among the actual failure types (indices 1-4)
-                    failure_type_idx = np.argmax(multi_probs[1:]) + 1
-                
-                failure_name = class_labels[failure_type_idx]
+                    failure_type_idx = int(np.argmax(multi_probs[1:]) + 1)
 
-                if not is_failure and failure_type_idx == 0:
+                failure_name = CLASS_LABELS[failure_type_idx]
+                healthy = (not is_failure) and (failure_type_idx == 0)
+
+                if healthy:
+                    conf_pct = (1 - binary_prob) * 100
                     st.markdown(f"""
-                        <div class="prediction-card success-card">
-                            <div class="status-badge" style="background: #10b981; color: white;">HEALTHY</div>
-                            <h2 style="margin: 0; color: #10b981;">{failure_name}</h2>
-                            <p style="color: #94a3b8; margin-top: 1rem;">Machine is operating within normal parameters.<br><b>Confidence: {100-binary_prob*100:.1f}%</b></p>
-                        </div>
+                    <div class="result-card result-healthy">
+                        <div class="result-icon">✅</div>
+                        <div class="result-badge badge-green">System Healthy</div>
+                        <div class="result-title result-title-green">{failure_name}</div>
+                        <div class="result-sub">All parameters within nominal range</div>
+                        <div class="result-conf">Confidence: <b>{conf_pct:.1f}%</b></div>
+                    </div>
                     """, unsafe_allow_html=True)
                 else:
-                    card_class = "danger-card"
-                    badge_color = "#ef4444"
-                    
+                    conf_pct = binary_prob * 100
                     st.markdown(f"""
-                        <div class="prediction-card {card_class}">
-                            <div class="status-badge" style="background: {badge_color}; color: white;">FAILURE DETECTED</div>
-                            <h2 style="margin: 0; color: {badge_color};">{failure_name}</h2>
-                            <p style="color: #94a3b8; margin-top: 1rem;">Anomaly detected in sensor stream.<br><b>Confidence: {binary_prob*100:.1f}%</b></p>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem; color: #cbd5e1;"><b>Action Required:</b> Immediate maintenance inspection.</p>
-                        </div>
+                    <div class="result-card result-failure">
+                        <div class="result-icon">🚨</div>
+                        <div class="result-badge badge-red">Failure Detected</div>
+                        <div class="result-title result-title-red">{failure_name}</div>
+                        <div class="result-sub">Anomaly detected — immediate inspection required</div>
+                        <div class="result-conf">Confidence: <b>{conf_pct:.1f}%</b></div>
+                    </div>
                     """, unsafe_allow_html=True)
-                
-                # Probability Distribution Chart
-                st.markdown("#### Confidence Analysis")
-                prob_df = pd.DataFrame({
-                    'Failure Type': class_labels,
-                    'Probability': multi_probs
-                })
-                st.bar_chart(prob_df.set_index('Failure Type'))
-                
-        else:
-            st.info("Adjust the parameters above and click 'Run Diagnostics' to see the AI analysis.")
 
-    with col_metrics:
-        st.markdown("### 📡 Live Readings")
-        
-        # Use a single markdown block for the metrics to keep them inside a card
+                # ── Probability distribution ──
+                st.markdown('<div class="section-label" style="margin-top:1.2rem;">Confidence Distribution</div>',
+                            unsafe_allow_html=True)
+                prob_df = pd.DataFrame({
+                    'Failure Type': CLASS_LABELS,
+                    'Probability':  [float(p) for p in multi_probs],
+                })
+                st.bar_chart(prob_df.set_index('Failure Type'), height=220, use_container_width=True)
+
+        else:
+            st.info("🔬 Adjust parameters and click **RUN DIAGNOSTICS** to begin analysis.")
+
+    # ── Live readings panel ──
+    with col_live:
+        st.markdown('<div class="section-label">03 — Live Sensor Readings</div>', unsafe_allow_html=True)
+        temp_delta = round(process_temp - air_temp, 1)
+        power_kw   = round((speed * torque) / 9550, 2)
+
         st.markdown(f"""
-            <div class="card">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div>
-                        <p class="metric-label">Air Temp</p><p class="metric-value">{air_temp} K</p>
-                        <p class="metric-label">Process Temp</p><p class="metric-value">{process_temp} K</p>
-                        <p class="metric-label">Speed</p><p class="metric-value">{speed} RPM</p>
-                    </div>
-                    <div>
-                        <p class="metric-label">Torque</p><p class="metric-value">{torque} Nm</p>
-                        <p class="metric-label">Tool Wear</p><p class="metric-value">{tool_wear} min</p>
-                        <p class="metric-label">Quality</p><p class="metric-value">{type_input.split()[0]}</p>
-                    </div>
+        <div class="glass-card">
+            <div class="metric-grid">
+                <div class="metric-tile">
+                    <div class="m-label">Air Temp</div>
+                    <div class="m-value">{air_temp:.1f}<span class="m-unit">K</span></div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Process Temp</div>
+                    <div class="m-value">{process_temp:.1f}<span class="m-unit">K</span></div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Rotational Speed</div>
+                    <div class="m-value">{speed}<span class="m-unit">RPM</span></div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Torque</div>
+                    <div class="m-value">{torque:.1f}<span class="m-unit">Nm</span></div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Tool Wear</div>
+                    <div class="m-value">{tool_wear}<span class="m-unit">min</span></div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Quality Grade</div>
+                    <div class="m-value">{type_input.split()[0]}</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Temp Delta</div>
+                    <div class="m-value">+{temp_delta}<span class="m-unit">K</span></div>
+                </div>
+                <div class="metric-tile">
+                    <div class="m-label">Est. Power</div>
+                    <div class="m-value">{power_kw}<span class="m-unit">kW</span></div>
                 </div>
             </div>
+        </div>
         """, unsafe_allow_html=True)
+
+        # ── Quick health indicators ──
+        st.markdown('<div class="section-label" style="margin-top:0.5rem;">Quick Health Flags</div>',
+                    unsafe_allow_html=True)
+
+        flags = []
+        if tool_wear > 200:
+            flags.append(("⚠️ High Tool Wear", "#f59e0b"))
+        if temp_delta > 12:
+            flags.append(("⚠️ Large Temp Delta", "#f59e0b"))
+        if torque > 65:
+            flags.append(("⚠️ High Torque", "#ef4444"))
+        if speed > 2500:
+            flags.append(("⚠️ High RPM", "#ef4444"))
+        if not flags:
+            flags.append(("✅ All Parameters Normal", "#10b981"))
+
+        for label, color in flags:
+            st.markdown(
+                f'<div style="font-family:\'DM Mono\',monospace;font-size:0.8rem;color:{color};'
+                f'padding:0.4rem 0.8rem;background:rgba(255,255,255,0.03);border-radius:0.5rem;'
+                f'margin-bottom:0.4rem;border:1px solid {color}33;">{label}</div>',
+                unsafe_allow_html=True,
+            )
+
 
 if __name__ == "__main__":
     main()
