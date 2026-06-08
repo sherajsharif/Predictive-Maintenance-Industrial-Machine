@@ -145,18 +145,47 @@ st.markdown("""
 # --- Helper Functions ---
 @st.cache_resource
 def load_assets():
+    """
+    Load all trained models from the models folder.
+    Works both locally and on Streamlit Cloud.
+    """
+
     try:
-        # Using relative paths for better portability
-        models_dir = 'models'
-        with open(os.path.join(models_dir, 'binary_xgb.pkl'), 'rb') as f:
+        # Get absolute path of current app.py
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+        # Models folder path
+        MODELS_DIR = os.path.join(BASE_DIR, "models")
+
+        # File paths
+        binary_model_path = os.path.join(MODELS_DIR, "binary_xgb.pkl")
+        multi_model_path = os.path.join(MODELS_DIR, "multi_xgb.pkl")
+        scaler_path = os.path.join(MODELS_DIR, "scaler.pkl")
+
+        # Check existence
+        if not os.path.exists(binary_model_path):
+            raise FileNotFoundError(f"Missing file: {binary_model_path}")
+
+        if not os.path.exists(multi_model_path):
+            raise FileNotFoundError(f"Missing file: {multi_model_path}")
+
+        if not os.path.exists(scaler_path):
+            raise FileNotFoundError(f"Missing file: {scaler_path}")
+
+        # Load models
+        with open(binary_model_path, "rb") as f:
             binary_model = pickle.load(f)
-        with open(os.path.join(models_dir, 'multi_xgb.pkl'), 'rb') as f:
+
+        with open(multi_model_path, "rb") as f:
             multi_model = pickle.load(f)
-        with open(os.path.join(models_dir, 'scaler.pkl'), 'rb') as f:
+
+        with open(scaler_path, "rb") as f:
             scaler = pickle.load(f)
+
         return binary_model, multi_model, scaler
+
     except Exception as e:
-        st.error(f"Error loading models: {e}")
+        st.error(f"❌ Error loading models: {e}")
         return None, None, None
 
 # --- Main App ---
@@ -166,7 +195,9 @@ def main():
 
     # Load Assets
     binary_model, multi_model, scaler = load_assets()
-    if not (binary_model and multi_model and scaler):
+    if binary_model is None or multi_model is None or scaler is None:
+        st.error("❌ Failed to load model files.")
+        st.stop()
         st.error("Missing model files in 'models/' directory.")
         return
 
